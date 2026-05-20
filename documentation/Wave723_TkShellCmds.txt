@@ -1,0 +1,574 @@
+Help
+MemMgr
+MemStat
+Help
+Help [-v] | Help [-v] Group | Help Cmd
+Ver
+Show Request Broker version
+GetDebug
+GetDebug -h | GetDebug Module
+-h shows module lists
+SetDebug
+SetDebug -h | SetDebug -rb | SetDebug -prev | SetDebug Module value
+-h shows module lists. 
+-rb sets the debug message settings to RB mode. i.e. It turns off all debug messages except RB|PRT, ALL, EXCEPTION.
+-restore restores the debug message settings to the one previous of -rb.
+"SetDebug Module value" sets the Module debug setting to the value.
+This command sets the debug setting Tempararily. To make this change permanent, use "SaveDebug" afterwards.
+SetSubDebug
+SetSubDebug -h | SetSubDebug -rb | SetSubDebug -prev | SetSubDebug Module value
+FlushDebug
+SaveDebug
+SaveDebug modulename debugcase
+ex: Sevedebug MemMgr 0xff
+SaveSubDebug
+Sub CPU SaveDebug modulename debugcase
+ex: SeveSubdebug MemMgr 0xff
+RecentDebugMessage
+Print recent debug message
+Save
+Save all debug information to debug.txt
+Prt
+Prt [-v]
+Print debug information. This is a main debugging command. "-v" option gives more information.
+GetPreConfig
+Get current Pre-configuration name
+GetPreConfigEx
+GetPreConfigByStr
+GetPreConfigAll
+GetPreConfig List
+Get current Pre-configuration List
+GetUserMemStat
+Get available user memory size
+SetDebugLevel
+SetDebugLevel level
+Set Debug Level ("high", "middle", "low")
+SetAppDebug
+SetAppDebug 0/1
+Set App Debug Level ("0", "1")
+GetAppDebug
+Get App Debug Level 
+GetDebugLevel
+GetDebugLevel level
+Get Current Debug Level
+ResetApp
+Reset App
+SelectiveReset
+Selective Reset
+GetResetResult
+Get Reset Result
+Format
+EnableCheckpoint
+DisableCheckpoint
+SetCheckpoint
+SetLowBattery
+BackupEfs
+Backup EFS to TFS
+RestoreEfs
+Restore EFS from TFS
+CameraOp
+OrgOp
+SimpleTest
+EnableMTP
+EnableDiagWrite
+SetDiagDebug
+Drm2Init
+Drm2Verify
+SoftReset
+Shutdown first and Reset
+DebugModeInLow
+Debug Mode in debug level LOW
+DebugModeInLow ("on", "off")
+SaveDebugToFile
+Save Debug Message To File
+SaveDebugToFile ("on", "off")
+TouchFWVerPrt
+SIMAutoSetting
+SetTouchFilter
+PrtTouchFilterInfo
+GetFFSVer
+Get FactoryFS Binary Version
+GetRC1Ver
+Get Resource1 Binary Version
+GetRC2Ver
+Get Resource2 Binary Version
+StartFPM
+Start Factory Production Mode
+CheckFPM
+Check Factory Production Mode
+EnableFPM
+Enable Factory Production Mode
+DisableFPM
+Disable Factory Production Mode
+SetDefaultSkinColor
+Set DefaultSkinColor
+SetDefaultSkinColor ("blue","pink")
+CheckDefaultSkinColor
+Check DefaultSkinColor
+CheckDefaultSkinColor  ("blue","pink")
+PlayScenarioFile
+PlayScenarioFile [file]
+GetDefaultContentsSize
+Get Default Contents Size
+CheckDefaultContentsSize
+Check Default Contents Size
+PrtFlashPlayerState
+SetFlashPerformanceTest
+SetFlashTestMode
+SetFlashDebugMode
+SetGLDebugMode
+SetGLDebugMode [ 0|1|2|3 ]
+0 NONE. 
+1 Error Only.
+2 Call Trace only.
+3 Both.
+GetCSCVer
+Get CSC Version
+CheckCSCIniFile
+Check CSC ini File
+GetCSCIniFile
+Get CSC ini File
+GSensorStop
+GSensor Stop
+GSensorStart
+GSensor Start
+RTL
+RTL Support
+DevSetPhoneStatus
+Set Phone Status
+DevGetPhoneStatus
+Get Phone Status
+GetCustomCode
+Get Custom Code
+CheckCMLA
+Check DMLA
+CheckNAVI
+Check NAVI
+GetUSBMode
+Get Usb Mode
+CheckUSBMode
+Check Usb Mode
+SetMsPersonal
+CheckPreConfig
+Check PreConfig
+Check current Pre-configuration setting
+GetLevelOfLock
+Get Level Of Lock
+SetPreConfig
+SetPreConfig nation_name
+Set Pre-configuration corespondence to nations("default", "spain", "italy", "uk", "germany", "common")
+GetSWVer
+AppPkgInstall
+AppPkgInstall [app path]
+Install application package
+AppPkgUninstall
+AppPkgUninstall [app path]
+Uninstall application package
+AppPkgLaunch
+AppPkgLaunch [app path] [working dir]
+launch application
+MediaDbUpdate
+update media db
+Gdb
+gdb <cmd> <addr>
+GDB Interface
+GdbServer
+GdbServer tty prog | GdbServer tty --attach PID 
+Starts GDB Server in USB port
+GdbStartServer
+Enables USB port for GDB
+GdbDisable
+Disable USB Port for GDB
+SetAutoUpload
+GetPersonalizationInfo
+GetPersonalizationInfo 
+DevConInfo
+ChCmdInt
+Change Command Interface
+CheckIdleState
+Check Current Idle State
+IsIdleEntered
+Check Idle Entered
+GetDpImg
+Get Screen Image
+PrtLibrary
+Print Library(so) Info
+PwrSaveMode
+Control Power Save Mode
+TerminateProcess
+Terminate Process [pid]
+Terminate Process with pid
+GetFotaEngineVer
+Get FOTA Engine Version
+GetAppInstallCondition
+Get Application install condition
+TmGetZoneInfoDB
+TerminateProcessEx
+Terminate Process [appname|appid]
+Terminate Process with app name or app id
+TestKeyToDrvKey
+Convert Test Key To Driver Key Code.
+Administration
+MemPrt
+MemPrt addr [n]
+MemMark
+MemMark [iHeap]
+Mark to all allocated memory block
+MemUnmark
+MemUnmark [iHeap]
+Unmark all allocated memory block
+MemPrtUnmark
+MemPrtUnmark [iHeap] [-v]
+Print all unmarked memory block list. When -v option is given, The print is verbose
+MemPrtBlock
+MemPrtBlock -i index | MemPrtBlock -a address
+Print the allocated block information
+MemStat
+MemStat heapIndex
+Print the Memory Status
+MemGetByte
+MemGetByte addr
+MemSetByte
+MemSetByte addr value
+MemGetInt
+MemGetInt addr
+addr should be multiples of 4.
+MemSetInt
+MemSetInt addr value
+MemAlloc
+MemAlloc size
+MemFree
+MemFree addr
+MemCheck
+MemCheck [iHeap] [pMem]
+Check MemMgr crashed or not
+MemPrtHeapInfo
+MemPrtHeapInfo [iHeap]
+Print MemMgr Heap information
+Memcpy
+Memcpy address length
+MemLeak
+Check memory leak
+SubMemLeak
+SubCPU MemLeak
+Check Sub CPU memory leak
+SubMemStat
+SubCPU MemStat
+Print Sub CPU memory Status
+MemSetUpload
+Set Phone to Upload mode
+MemResetPeakUsage
+Reset Peak field in MemStat
+MemOutOfMemory
+generate Out of memory state
+MemMgr
+PrtEvent
+PrtEvent [n]
+Print the last processed n events. The default value is used when n is not specified. Max events are printed with -1.
+PrtQEvent
+PrtQEvent [n]
+Print the first n events waiting in the event queue. The default value is used when n is not specified.
+PrtEH
+PrtEH [hEH]
+Print information of the hEH. Information of All the EHs are printed when hEH is not specified.
+PrtEHG
+PrtEHG [hEHG]
+Print information of the hEHG. Information of All the EHGs are printed when hEHG is not specified.
+EventMgr
+PrtTimer
+PrtTimer [hTimer]
+Print the Timers information. When hTimer is missed, the information of all the timers are printed.
+PrtSoftTimer
+PrtSoftTimer [hTimer]
+Prints Software Timer information. if hTimer is omitted, the information of all the timers are printed.
+SetTimezone
+SetTimezone offset
+SetDayLight
+SetDayLight offset
+OsAL
+PrtReg
+PrtReg [hReg]
+Print registery information of the hREG. The information of All the hRegs are printed when hReg is not specified.
+RegGetInt
+RegGetInt Registry section key
+RegGetReal
+RegGetReal Registry section key
+RegGetStr
+RegGetStr Registry section key
+RegSetInt
+RegSetInt Registry section key value
+RegSetReal
+RegSetReal Registry section key value
+RegSetStr
+RegSetStr Registry section key value
+RegAddSection
+RegAddSection Registry section
+RegRemSection
+RegRemSection Registry section
+RegCopySection
+RegCopySection Registry section section
+RegRemKey
+RegRemKey Registry section key
+RegMgr
+NvGetInt
+NvGetInt nvItemId
+NvGetStr
+NvGetStr nvItemId
+NvSetInt
+NvSetInt nvItemId value
+NvSetStr
+NvSetStr nvItemId value
+NvWriteInt
+NvWriteInt nvItemId value
+NvWriteStr
+NvWriteStr nvItemId value
+NvGetTextFile
+NvGetTextFile nvItemId value
+NvMgr
+PrtFile
+PrtFile [hFile]
+Print file information of the hFile. The information of All opened hFiles are printed when hFile is not specified.
+PrtDir
+PrtDir [hDir]
+Print directory information of the hDir. The information of All opened hDir are printed when hDir is not specified.
+FmStat
+Print the file system status
+PrtQuota
+PrtQuota [handle]
+Print Quota Information
+quotaFull
+QuotaFull [handle] [remain size]
+Make Full Quota Information
+quotaClean
+QuotaClean [handle]
+Clean Quota Information
+FmSecureMode
+FmSecureMode on|off
+FmPrtNandInfo
+FmCheckFactoryFSFile
+FmAPITest
+FmAPITest [Base path for testing]
+FmBurstTest
+FmBurstTest [Base path for testing] [Number of File] [TestOption] [TestFileSize]
+FmFillDir
+FmFillDir [Base path for testing]
+FmPerfTest
+FmPerfTest [MountPath] [bDirectIOMode] [bDetailedTest]
+FmPrtNonQuotaEntry
+FmPrtNonQuotaEntry [0 or 1]
+FmMakeFrag
+FmMakeFrag fragLevel [elementSize]
+FmPrtShpMemorymap
+FmPrtShpMemoryMap
+CodeDecompTest
+DevUmsTestCDFS
+FmCreateDir
+FmCreateDir [path]
+FmCopyFile
+FmCopyFile [source path] [dest path]
+FmListDir
+FmListDir [path]
+FmMoveFile
+FmMoveFile [source path] [dest path]
+FmRemoveFile
+FmRemoveFile [path]
+FmRemoveDir
+FmRemoveDir [path]
+FileMgr
+Db2MgrTest
+DbMgr
+PrtFocus
+PrtWin
+PrtWin [hWin]
+Print information of the hWin. Information of All the windows are printed when hWin is not specified.
+PrtGC
+PrtGC [hGC]
+Print information of the hGC. Information of All the GCs are printed when hGC is not specified.
+SetText
+SetText [text]
+Set Text in the focused editfield or editarea.
+PrtScnMgr
+Print the information of the ScnMgr.
+PrtScnMgrPerf
+Print the information of the ScnMgr Performance.
+PrtDispAL
+Print the information of the DispAL.
+PrtLeakBmp
+PrtLeakBmp 
+GWES
+PrtBmp
+Print information of all the resource bitmaps.
+PrtSwitch
+Print information of all the switching lists.
+APPFRMWK
+PrtAVPlayer
+PrtAVPlayer [hPlayer]
+Print AvPlayer handle info
+AVMS
+PrtCall
+PrtCall [hCall]
+Print information of the hCall. Information of All the calls are printed when hCall is not specified.
+PrtCCT
+Print CCT (Call Context Table)
+PrtNWinfo
+Print NWinfo (Current Network information)
+SetConfigAO
+SetConfigAO [AOMode]
+Set the AO mode with var1=(int)AO mode
+SetConfigSecondaryPDPC
+SetConfigSecondaryPDPC [SecondaryPDPC]
+Set the Secondary PDPC (0 or 1).
+SetConfigCiphering
+SetConfigCiphering [ciphering]
+Set the Ciphering (0 or 1).
+TAPI
+CommUtilTest
+CommUtilTest [command]
+Set CommUtilTestTestCommand
+CommUtilTest
+DsmTest
+DsmTest [command]
+Set DsmTestTestCommand
+DsmTest
+PrtProto
+PrtProto [hProto]
+Print information of the hProto. Information of All the handles are printed when hProto is not specified.
+PrtProtoAccount
+PrtProtoAccount [hProtoAccount]
+Print information of the hProtoAccount. Information of All the handles are printed.
+PrtProtoFd
+Print information of Fast Dormancy Information.
+InjectProtoEvent
+InjectProtoEvent [NetworkEvent OpMode ProtoType ContextID ProtoError(SuspendReason)]
+PrtSock
+PrtSock [hSocket]
+Print information of the hSocket. Information of All the sockets are printed when hSocket is not specified.
+PrtDns
+PrtDns[Arg]
+Print information of the All DNR information and DNS Cache information.
+Ethereal
+Ethereal [Start/Stop]
+Start/Stop Ethereal Logging. It will be created at /User/Mass/SocketLog/*.cap.
+ProtoMgr
+WlanCmd
+WlanCmd [cmd option]
+WlanDriver
+PrtEQ
+PrtEQ [slot] | PrtEQ [from to]
+Print the EQ (eventQeue) slots specified. When there is no arguemetn, all the slots are printed.
+-1 means the highest slot in from or to
+PrtEQParam
+Print the parameters of the EQ (eventQeue).
+PrtNEQ
+PrtNEQ [slot] | PrtNEQ [from to]
+Print the NEQ (nestEventQueue) slots specified. When there is no arguemetn, all the slots are printed.
+-1 means the highest slot in from or to
+PrtNEQParam
+Print the parameters of the NEQ (nestEventQeue).
+PrtEHC
+Print all the information of EHC (Event Handler Calling) queues incluing eventQueue and nestEventQueue.
+PrtEHCParam
+Print the parameter values of (Event Handler Calling) queues incluing eventQueue and nestEventQueue.
+Assert
+Assert [situation]invoke assertion, situation=overflow
+Reset
+MsgReset
+Show the message box which is actually a bitmap, and cold-reset
+Wait
+JumpNull
+Jump to a null pointer
+PrtCurTask
+BrkMem
+BrkMemNChk
+SetMassProductionFlag
+UnlockSecBoot
+PrtSecBoot
+Local
+For the purpose of local tests
+PrtPhoneStatus
+Print information of Phone Status
+PrtSimInfo
+Print information of SIM callback info
+VibStart
+VibStart [level] [onPeriod] [offPeriod] [count]
+Vibration Start, return Handle number
+VibStop
+VibStop [handle]
+Vibration Stop
+DevInd
+DevInd [Insert |Remove]
+Device Insert/Remove simulation
+DevIsExtMemoryInserted
+DevIsExtMemoryMounted
+DevGetExtMemoryTotalSize
+Get Extern Memoy Total Size
+DevGetExtMemoryUsedSize
+Get Extern Memoy Used Size
+DevCollectSensorData
+DevCollectSensorData [Start|Stop] [SensorName] [Period(ms)] [OutputFileName]
+Collect Sensor data and save it to file
+DevMgr
+iSQLInit
+iSQLInit 
+iSQLQuery
+iSQLQuery [iSQL Query string]
+iSQLSetPath
+iSQLSetPath[DB path]
+iSQLBye 
+iSQLBye
+RealConnectToDataBase
+RealDisconnectToDataBase
+RealExecuteQuery
+RealExecuteUnicodeQuery
+RealGetQueryType
+RealGetQueryResult
+RealExecuteCommit
+RealExecuteRollback
+RealGetErrorMessage
+RealGetQueryPlan
+RealGetAttachedTables
+RealGetAttachedTablesLength
+RealGetAttachedTablesData
+RealFreeAttachedTablesData
+RealSetDelimiter
+RealGetAllTableInfo
+RealGetAllKeyInfo
+RealGetAllColumnInfo
+RealGetAllSelectedData
+RealSetMemoryBuf
+RealFreeMemoryBuf
+RealGetAllTableList
+RealGetDatabaseName
+RealGetTimeGap
+RealDropOneRow
+RealUpdateRID
+RealGetDBVersion
+iSQL
+BrAddBookmark
+BrAddBookmark [FolderID] [BookmarkID] [Title] [URL] [Lock]
+Add Bookmark
+BrGetBookmarkTitle
+BrGetBookmarkTitle [FolderID] [BookmarkID]
+Get Bookmark Title
+BrGetBookmarkUrl
+BrGetBookmarkUrl [FolderID] [BookmarkID]
+Get Bookmark Url
+BrGetBookmarkLock
+BrGetBookmarkLock [FolderID] [BookmarkID]
+Get Bookmark Lock
+BrDeleteAllBookmark
+Delete All bookmark
+BrDeleteBookmark
+BrDeleteBookmark [FolderID] [BookmarkID]
+Delete One bookmark
+Browser
+SmsEnable
+enable SMS read
+SmsReadCount
+read received SMS counts
+SmsReadText
+SmsReadText [index]
+read SMS contents with index
+SmsReadLastText
+read Latest SMS contents with index
+MsgDbgPrt

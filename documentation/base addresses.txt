@@ -1,0 +1,2 @@
+uncompress_boot2.bin - 0x84000000
+uncompress_apps.bin - 0x81000000
