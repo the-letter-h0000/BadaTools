@@ -9,7 +9,7 @@ AT+SYNCML=MOBEXSTART - starts M-OBEX protocol
 AT+PROF=? - list available profiles
 AT+PROF="(prof)" - get profile
 AT+PROF=CONTINUE - continue to list xml data about a profile (used by some models, specifically the Samsung Wave 723)
-AT+VIBRATOR=(ON|OFF) - you guessed it, it turns on/off the virbator
+AT+VIBRATOR=(ON|OFF) - you guessed it, it turns on/off the vibrator
 AT+TOUCH=(x),(y),(PRESS|HALFLONGPRESS|LONGPRESS|MOVE|RELEASE) - touch the screen
 AT+KEY=(1-200),[PRESS|RELEASE|LONGPRESS] - press a key (PRESS, etc are optional)
 Other ATs - TBD
