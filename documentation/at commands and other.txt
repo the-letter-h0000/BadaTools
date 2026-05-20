@@ -76,6 +76,8 @@ dialer: *#33284*#
 
 SET BACK TO LOW TO AVOID BLUE SCREENS (unknown, may be safe to use while DebugLevel is NOT 0 (Low))
 
+responses to TkShell commands appear on the 2nd serial device exposed by the device (e.g. /dev/ttyACM0 (modem) - requests, /dev/ttyACM1 (logs / debug) - responses), device does not log responses / return codes when Debug Level is Low
+
 -----------------------
 
 FULL COMMAND LIST (Wave 723 fw):
