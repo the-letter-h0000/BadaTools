@@ -49,7 +49,7 @@ TkShell request breakdown (used by CmdChkTool V1.4_0820.exe and likely QuB):
 00
 (YOUR NULLTERM COMMAND HERE)
 (CRC-16/CMS calc of every byte from 00 05 (included) to the end of the command (NUL included))
-7F
+7E
 ```
 
 e.g.
