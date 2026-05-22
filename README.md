@@ -26,7 +26,13 @@ Requirements:
 
 ## Decompilation tools
 ### readFunclist.py
-Dumps the function list in uncompressed_apps.bin (from 0x04340008 to 0x04E29953) in a readable format, must take the function list out of uncompressed_apps.bin yourself (using a hex editor)
+Dumps the function list in uncompressed_apps.bin (0x04340000) to a readable format, also converts addresses lower than 0x81000000 to image base offsets for use in Ghidra
+
+Examples:
+```
+start: 0x7C047D3C (0x81DC7D3C), end: 0x7C047D40 (0x81DC7D40) - AmLedBlink
+start: 0x813E162A, end: 0x813E1696 - SimGetIccidInfo
+```
 
 Requirements:
 - Python 3
