@@ -1,5 +1,5 @@
 # BadaTools
-tools for BadaOS 1.1 devices
+tools for SHP / BadaOS 1.1 devices (BadaOS 2.0 not tested because i don't have a BOS2.0 device)
 
 source of firmware used for decomp:
 
