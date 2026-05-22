@@ -1,11 +1,17 @@
-file = open("funclist.bin", "rb") # uncompress_apps.bin, 0x04340008, 0x04E29953
-print("opened funclist.bin")
-a = file.read()
-file.seek(0)
-if (len(a) % 44 != 0):
-    print("ERROR: funclist is NOT mod 44 = 0")
+file = open("uncompress_apps.bin", "rb")
+print("opened uncompress_apps.bin")
+file.seek(0x04340000)
+size = int.from_bytes(file.read(4), 'little') - 8
+CAFECAFE = int.from_bytes(file.read(4), 'little')
+if CAFECAFE != 0xCAFECAFE:
+    print(f"ERROR: uncompress_apps.bin is NOT valid (0x04340004 is NOT 0xCAFECAFE, got 0x{CAFECAFE:08X})")
     exit()
-for i in range(len(a) // 44):
+print(f"size: 0x{size:08X}")
+if (size % 44 != 0):
+    print(f"ERROR: uncompress_apps is NOT mod 44 = 0 (mod result: {size % 44})")
+    exit()
+print(f"functions: {size // 44}")
+for i in range(size // 44):
     # read the name of the function
     funcname = file.read(36)
     # read the LE start address
