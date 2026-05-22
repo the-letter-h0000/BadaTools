@@ -5,7 +5,7 @@ import re
 import math
 from PIL import Image
 
-# Samsung Wave screenshotter
+# Samsung SHP screenshotter
 # data format:
 # 22 [screen no] [chunk no (2 bytes LE)] 00 10 00 [rgb565 data] 00 00 00 00 00 [CRC-16/IBM-SDLC (2 bytes, LE)] 7E
 # chunk formula:
@@ -20,7 +20,7 @@ from PIL import Image
 # 2048 if total pixels is less than 384,000 pixels
 # 4096 if total pixels is more than 384,000 pixels
 
-# TODO: check other Waves (only tested on a Samsung Wave 723 GT-S7230E (firmware: S723EPMKB1))
+# TODO: check other devices (only tested on a Samsung Wave 723 GT-S7230E (firmware: S723EPMKB1), and 3 Samsung Star GT-S5230 devices)
 
 s = serial.Serial(sys.argv[1])
 
