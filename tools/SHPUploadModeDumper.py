@@ -165,6 +165,8 @@ import os
 #   return;
 # }
 
+# TODO: check other devices (only tested on a Samsung Wave 723 GT-S7230E (firmware: S723EPMKB1))
+
 def sendcmd(command, serial):
     #print(f"[d] send {command}")
     serial.reset_input_buffer() # rename to magic_ttyACM_fixer_9000(), fixes like 90% of problems, i don't know why, and neither god knows
