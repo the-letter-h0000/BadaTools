@@ -165,8 +165,6 @@ import os
 #   return;
 # }
 
-# TODO: check other devices (only tested on a Samsung Wave 723 GT-S7230E (firmware: S723EPMKB1))
-
 def sendcmd(command, serial):
     #print(f"[d] send {command}")
     serial.reset_input_buffer() # rename to magic_ttyACM_fixer_9000(), fixes like 90% of problems, i don't know why, and neither god knows
@@ -222,6 +220,7 @@ def showhelp():
     print((" "*8)+"help                       - show this screen")
     print((" "*8)+"getinfo                    - get firmware info")
     print((" "*8)+"getcrash                   - get bluescreen details")
+    print((" "*8)+"getreason                  - get reason for upload mode entry")
     print((" "*8)+"nandsize                   - get NAND size")
     print((" "*8)+"sendraw [CMD1] [CMD2] ...  - send raw commands to bootloader on device")
     print((" "*8)+"halt                       - halt bootloader on device")
@@ -274,6 +273,41 @@ s.timeout = 3
 
 if sys.argv[2] == "help":
     showhelp()
+    exit()
+
+if sys.argv[2] == "getreason":
+    print("getting reason for upload mode entry...")
+    reason = dumpmem(0x8FF00038, 0x8FF00039, s) # ram, may change between models and firmwares
+    if reason == None:
+        print("FAIL AT: dumpmem(0x8FF00038, 0x8FF00039, s)")
+        exit()
+    reason = int.from_bytes(reason)
+    if reason == 0x10:
+        print("reason: AST_DOWNLOAD (entry to Download mode)")
+    elif reason == 0x20:
+        print("reason: AST_DOWNLOAD (entry to Download mode (no LCD banner))") # dunno what this one does, decomp has it so it's here
+    elif reason == 0x04:
+        print("reason: AST_POWERON_ALARM") # unknown what this does, and i'm not gonna risk my only Wave to get UART logs from it
+    elif reason == 0x08:
+        # get more info
+        reason_upload = dumpmem(0x8FF00400, 0x8FF00401, s) # again
+        if reason_upload == None:
+            print("FAIL AT: dumpmem(0x8FF00400, 0x8FF00401, s)")
+            exit()
+        reason_upload = int.from_bytes(reason_upload)
+        if reason_upload == 0x00:
+            print("reason: AST_UPLOAD (entry to Upload mode)")
+        else:
+            print("reason: AST_BLUESCREEN (entry to Upload mode from a bluescreen)")
+    elif reason == 0x60:
+        print("reason: DOWNLOAD_FAIL") # unknown, maybe after a failed flash
+    elif reason < 0x11:
+        if reason == 0x01:
+            print("reason: AST_POWERON (normal boot)")
+        elif reason == 0x02:
+            print("reason: AST_POWERON_LPM (boot to charging screen)")
+    else:
+        print(f"unknown reason (0x{reason:02X})")
     exit()
 
 if sys.argv[2] == "getcrash":
