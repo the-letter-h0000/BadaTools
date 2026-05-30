@@ -447,6 +447,9 @@ print(f"opened {s.name}")
 for curr_start in range(start, end , 0x040000):
     curr_end = min(curr_start + 0x040000, end)
     chunk = dumpmem(curr_start, curr_end, s)
+    if chunk == None:
+        print(f"FAIL AT: dumpmem(0x{curr_start:08X}, 0x{curr_end:08X}, s)")
+        exit()
     if len(chunk) == 0:
         print("dataxfer returned NULL!!!")
         print("padding with 0x00's")
