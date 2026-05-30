@@ -1,0 +1,78 @@
+*#197328640#         - debug stuff (dbg scr, ver info, rf test, baseband, audio, common)
+*2767*3855#          - full factory reset (except EFS)
+*#06#                - show IMEI
+*#1111#              - show SW version
+*#0842#              - vibration test
+*#0228#              - battery stats and info
+*#2222#              - show HW version
+*#1234#              - show SW and CSC version
+*#03#                - show Unique Number
+*#4986*2650468#      - show SW, HW, RF calibration date, CSC, CSC model spec, FFS, RC1, RC2
+*#9838#              - show RF calibration date
+*#9999*0#            - show supported UE bands
+*#0002*28346#        - show CYPRESS FW and module ver
+*#7412359#           - wireless debug stuff (remove cal data, bt test, wifi test, set 8bit battery adc, rf cal stat, rf cal backup, rf cal restore)
+*#232337#            - turn on bt rf test mode? and show MAC
+*#0673#              - MP3 test
+*#0289#              - Melody test
+*#0283#              - Loopback test
+*#0782#              - show current time
+*2767*62357#         - reset lockscreen password
+*#0*#                - test mode (you already know this one lmao)
+*#746322#            - another test menu
+*#2470#              - enable / disable BIP (???)
+*#2652#              - CMLA FALSE (???)
+*#2378*66#           - show number of certificates installed
+*#24325786#          - show checksum from decompressed apps_compressed header
+*#737381#            - reset VOM and CAM count
+*#4777*8665#         - Power on attach selection menu
+*#78#                - admin setting (Test touch free test)
+*2767*73876766#      - enable Sell Out SMS
+*2767*738767633#     - disable Sell Out SMS
+*2767*4387264636#    - show info (sellout sms, PCode, Mode)
+*2767*7387678378#    - set to TEST mode
+*2767*7387677763#    - set to PRODUCTION mode
+*#63895#             - band selection menu (auto, GSM only, etc etc)
+*#301279#            - enable HSDSPA
+*#279301#            - disable HSDSPA
+*#4097*4097#         - LBS application (debug / tests)
+*#2665#              - F/W update
+*#26652665#          - F/W special update (crashes device (TchDrv_DownloadStart))
+*#2663#              - show CYPRESS FW and module ver
+*#5238973#           - show LCD type (e.g. S6D04D3X01_SONY_LCD)
+*#0229#              - LCD brightness set (fine) (maybe test)
+*#9998*378378#       - enable / disable FSTest
+*46798*#             - reboot phone (unknown what this does)
+#46798*#             - reboot phone (unknown what this does)
+*#10371839#          - dialog box: "Empty" (???)
+*#0788#              - show default wallpaper image, after load exits
+*#7790#              - enable / disable Proximity sensor
+*#877225#            - reset touch calibration
+*#526#               - Wifi test mode
+*#33284*#            - debug level selection menu (low / middle / high)
+*#6284#              - Navigation selection menu (enable / disable)
+*#2378*633#          - get development certificates status (installed / uninstalled)
+*#352740#            - enable / disable Flash testmode
+*#47373#             - Wlan test (ConnTest, Throuput Test, Connected Info)
+*#4736767#           - enable / disable Call Motion UI
+*#698378#            - enable Testmode (status bar now is demo mode)
+*#877#               - touch calibration???
+*#68*#               - MyTest menu (Test-Mocha, Test-MTTask, MyTestApp, SoundTester)
+*#7353#              - another test menu (Melody, Vibration, (L)Speaker, Dimming, Camera, BlueTooth, TSP Dot mode, TSP Grid mode, Accelerometer)
+*#6870#              - enable / disable MTP Screen block
+*#8720#              - enable AP USB mode
+*#8740#              - enable AP UART mode
+*#7575#              - dialog box: "There is no Version info" (???)
+*#9998*378378#       - enable / disable FSTest
+*#7594#              - enable / disable IDLE Popup mode
+*#5647100#           - creating something??? (Creating... It takes time...)
+*#1256#              - keyboard test???
+*#80#                - keyboard test???
+*#22321#             - enable / disable  App Debug
+*#28865625#          - enable / disable Touch Panel auto lock
+*#287#               - keyboard test???
+*#0011#              - baseband info
+*#3682837#           - FOTA engine version
+*#3682873283#        - FOTA stuff (Moving Delta File : Fail to move Delta. Check the delta.bin.)
+*#6984125*#          - enable / disable Autoanswering mode
+*#0688#              - enable / disable MTT mode
