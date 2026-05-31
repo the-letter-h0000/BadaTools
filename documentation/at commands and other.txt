@@ -43,22 +43,24 @@ OK
 TkShell request breakdown (used by CmdChkTool V1.4_0820.exe and likely QuB):
 ```
 7F
-(len of every byte from that point until end of command)
-00 42 00 05
-(len of command, NUL included)
-00
+(16-bit LE len of every byte from that point until end of command)
+42
+subcommand type (e.g. what type of file operation on __RbHandleFm)
+command type
+(16-bit LE len of command, NUL included)
 (YOUR NULLTERM COMMAND HERE)
-(CRC-16/CMS calc of every byte from 00 05 (included) to the end of the command (NUL included))
+(CRC-16/CMS calc of every byte from the subcommand (included) to the end of the command (NUL included))
 7E
 ```
 
 e.g.
 ```
 7F
-1D (unkLen: 29 (total length of: 00 42 00 05 17 00 44 65 76 49 73 45 78 74 4D 65 6D 6F 72 79 49 6E 73 65 72 74 65 64 00))
-00 42 00 05
-17 (cmdLen: 23)
-00
+1D 00 (unkLen: 29 (total length of: 00 42 00 05 17 00 44 65 76 49 73 45 78 74 4D 65 6D 6F 72 79 49 6E 73 65 72 74 65 64 00))
+42
+00 (none)
+05 (__RbHandleMisc / TkShell)
+17 00 (cmdLen: 23)
 DevIsExtMemoryInserted\0
 45 9B (CRC: 0x459B)
 7E
