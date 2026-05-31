@@ -34,6 +34,10 @@ Requirements:
 ### TkShell.py
 sends TkShell commands to the device, available commands are in `documentation/Wave723_TkShellCmds.txt`
 
+Requirements:
+- Python 3
+- pyserial
+
 ## Decompilation tools
 ### readFunclist.py
 Dumps the function list in uncompressed_apps.bin (0x04340000) to a readable format, also converts addresses lower than 0x81000000 to image base offsets for use in Ghidra
