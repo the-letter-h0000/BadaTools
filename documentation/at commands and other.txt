@@ -60,7 +60,7 @@ e.g.
 42
 00 (none)
 05 (__RbHandleMisc / TkShell)
-17 00 (cmdLen: 23)
+17 00 (len of data: 23)
 DevIsExtMemoryInserted\0
 45 9B (CRC: 0x459B)
 7E
@@ -78,7 +78,24 @@ dialer: *#33284*#
 
 SET BACK TO LOW TO AVOID BLUE SCREENS (unknown, may be safe to use while DebugLevel is NOT 0 (Low))
 
-responses to TkShell commands appear on the 2nd serial device exposed by the device (e.g. /dev/ttyACM0 (modem) - requests, /dev/ttyACM1 (logs / debug) - responses), device does not log responses / return codes when Debug Level is Low
+text responses to TkShell commands appear on the 2nd serial device exposed by the device (e.g. /dev/ttyACM0 (modem) - requests, /dev/ttyACM1 (logs / debug) - responses), device does not log responses / return codes when Debug Level is Low
+
+device response format (sent on same port as sender) (2 packets):
+7F
+01 00 - unkLen of 1??
+42 01 - CRC??
+7E
+
+7F
+0B 00 - unkLen (11)
+42
+00 - subcommand type (none)
+05 - command type (__RbHandleMisc / TkShell)
+05 00 - length of data
+00 00 00 00 - return code (32-bit LE)
+00
+05 41 - CRC
+7E
 
 -----------------------
 
