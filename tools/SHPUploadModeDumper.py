@@ -6,6 +6,8 @@ import os
 
 # for use with Samsung phones running SHP (e.g. S5230, S7230E, etc) and in Upload Mode
 
+# WARNING: HARDCODED RAM ADDRESSES ARE **ONLY FOR WAVE 723 DEVICES!!!**
+
 # source:
 # void UploadModeParseCommand(int command) in uncompress_boot2.bin, 0x0005d2e8
 # {
