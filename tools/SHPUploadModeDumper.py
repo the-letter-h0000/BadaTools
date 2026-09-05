@@ -227,6 +227,7 @@ def showhelp():
     print((" "*8)+"sendraw [CMD1] [CMD2] ...  - send raw commands to bootloader on device")
     print((" "*8)+"halt                       - halt bootloader on device")
     print((" "*8)+"reboot                     - restarts device")
+    print((" "*8)+"getnvram <index as hex>    - read index from NVRAM")
     print((" "*8)+"<start> <end> <output>     - dump ram from <start> to <end>\n(both must be 8 char hex!) ('-' as <output> will dump to stdout)")
 
 def sizehelper(size):
@@ -272,6 +273,20 @@ if len(sys.argv) < 3:
 
 s = serial.Serial(sys.argv[1])
 s.timeout = 3
+
+if sys.argv[2] == "getnvram":
+    if len(sys.argv) < 4:
+        print("missing index value")
+        exit()
+    index = int(sys.argv[3], 16)
+    memaddr = index * 0x200 + 0x822798E8
+    print(f"getting 0x{index:02x} from NVRAM...")
+    block: bytes = dumpmem(memaddr, memaddr + 0x200, s)
+    if block == None:
+        print(f"FAIL AT: dumpmem({memaddr:04X}, {(memaddr + 0x200):04X}, s)")
+        exit()
+    print(block[0:block.index(0)].decode(errors="ignore"))
+    exit()
 
 if sys.argv[2] == "help":
     showhelp()
