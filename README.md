@@ -38,6 +38,13 @@ Requirements:
 - Python 3
 - pyserial
 
+### SamsungWave723ForgottenPasswordGetter.py
+Recovers the plaintext lockscreen PIN from NVRAM index 0x17C from a Samsung Wave 723 without factory resetting the device
+
+Requirements:
+- Python 3
+- pyserial
+
 ## Decompilation tools
 ### readFunclist.py
 Dumps the function list in uncompressed_apps.bin (0x04340000) to a readable format, also converts addresses lower than 0x81000000 to image base offsets for use in Ghidra
