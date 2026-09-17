@@ -1,2 +1,5 @@
-uncompress_boot2.bin - 0x84000000
-uncompress_apps.bin - 0x81000000
+bcmboot.img (FBL), image 0x0000 - 0x28000000
+bcmboot.img (FBL), image 0x1000 - 0x08400000
+bcmboot.img (FBL), image 0x4000 - 0x83E00000
+uncompress_boot2.bin (SBL) -      0x84000000
+uncompress_apps.bin -             0x81000000
