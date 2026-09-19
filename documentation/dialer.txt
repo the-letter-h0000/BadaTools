@@ -1,4 +1,6 @@
 *#197328640#         - debug stuff (dbg scr, ver info, rf test, baseband, audio, common)
+*#5239870*#          - Admin Setting (Software version, Pre-configuration, Network settings, Application settings) (Pre-conf requires operator code) (oper code: *#27236*#)
+*#7092463*#          - Internals (build info, debug settings, device test, module settings, DB mgmt)
 *2767*3855#          - full factory reset (except EFS)
 *#06#                - show IMEI
 *#1111#              - show SW version
