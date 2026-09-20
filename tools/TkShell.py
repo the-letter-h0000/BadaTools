@@ -162,7 +162,7 @@ respData = sin.read(respDataLen)
 crc = int.from_bytes(sin.read(2))
 endbyte = int.from_bytes(sin.read(1))
 if (endbyte != 0x7e):
-    print(f"invalid OemUsbWrite packet (invalid end byte) (got: 0x{endbyte:02X}, expected 0x42)")
+    print(f"invalid OemUsbWrite packet (invalid end byte) (got: 0x{endbyte:02X}, expected 0x7E)")
     exit()
 print(f"returned data: {respData.hex()}")
 crcCalc = crc16_cms(bytes([respSubcommand]) + bytes([respCommand]) + len(respData).to_bytes(2, 'little') + respData)
