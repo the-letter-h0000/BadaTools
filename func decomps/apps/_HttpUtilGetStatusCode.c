@@ -1,22 +1,20 @@
-int _HttpUtilGetStatusCode(char *rawResponseString)
+int _HttpUtilGetStatusCode(char *HttpStatusLine)
 {
-  int StatusCode;
-  undefined1 charStatusCode [16];
-  undefined1 HttpVersion [16];
+  int statusCode;
+  char szHttpStatusCode[16];
+  char szHttpVersion[16];
   
-  if (rawResponseString == (char *)0x0)
+  if (HttpStatusLine == (char *)0x0)
   {
-    StatusCode = -1;
+    statusCode = -1;
   }
   else
   {
-    AcMemsetEx(HttpVersion,0,0x10,0x10,DAT_81412cf4,0x250);
-    AcMemsetEx(charStatusCode,0,0x10,0x10,DAT_81412cf4,DAT_81412e18);
-    __0sscanf(rawResponseString,s_%s_%s_81412e1c,HttpVersion,charStatusCode);
-    StatusCode = AcAtoi(charStatusCode);
-    SysDebugPrintf(DAT_81412d70,s__HttpUtilGetStatusCode:_Version:_81412e24,HttpVersion,StatusCode);
+    AcMemsetEx(szHttpVersion,0,0x10,0x10,DAT_81412cf4,0x250);
+    AcMemsetEx(szHttpStatusCode,0,0x10,0x10,DAT_81412cf4,DAT_81412e18);
+    __0sscanf(HttpStatusLine,"%s %s ",szHttpVersion,szHttpStatusCode);
+    statusCode = AcAtoi(szHttpStatusCode);
+    SysDebugPrintf(DAT_81412d70,"_HttpUtilGetStatusCode: Version: %s Status: %d\n",szHttpVersion,statusCode);
   }
-  return StatusCode;
+  return statusCode;
 }
-
-
