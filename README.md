@@ -57,3 +57,9 @@ start: 0x813E162A, end: 0x813E1696 - SimGetIccidInfo
 
 Requirements:
 - Python 3
+
+### rtswitch8decoder.py
+Decodes `__rt_switch8` bytes to readable `case x -> ADDRADDR` cases
+
+Requirements:
+- Python3
