@@ -106,7 +106,6 @@ RB_ID_SYS_SetSimLock = 0x0D
 
 # writing NV strings:
 # PC to PHONE -> RB_NV with RB_ID_NV_SETSTRING, data: [uint LE: NV index] + [NULL terminated ASCII data, max 1 NVRAM block (512 bytes)]
-# PHONE to PC -> NV contents
 
 def buildcmd(data, command, subcommand):
     cmd = data
