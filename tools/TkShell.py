@@ -1,7 +1,7 @@
 import serial
 import sys
 
-# TODO: check other Waves / SHP devices (only tested on a Samsung Wave 723 GT-S7230E (firmware: S723EPMKB1))
+# TODO: check other Waves / SHP devices (only tested on a Samsung Wave 723 GT-S7230E (firmware: S723EPMKB1) and 3 Samsung Star devices)
 
 sin = serial.Serial(sys.argv[1])
 
@@ -101,7 +101,7 @@ RB_ID_SYS_SetSimLock = 0x0D
 # PHONE to PC -> directory list (byte structure still todo)
 
 # getting NV strings:
-# PC to PHONE -> RB_NV with RB_ID_NV_GETSTRING, data: ushort: NV index
+# PC to PHONE -> RB_NV with RB_ID_NV_GETSTRING, data: uint LE: NV index
 # PHONE to PC -> NV contents
 
 def buildcmd(data, command, subcommand):
