@@ -11,7 +11,7 @@ undefined4 ATCmd_GetDisplay(undefined4 param_1,void *HANDLE,int commandMode,char
   {
     iDisplayNum = strtol(displayNum,0,10);
     iChunkNum = strtol(chunkNum,0,10);
-    iVar1 = __RbmCHSendLCDDisplayData_8191FCE4(iDisplayNum,iChunkNum);
+    iVar1 = __RbmCHSendLCDDisplayData(iDisplayNum,iChunkNum);
     if (iVar1 != 0)
     {
       AT_CmdRspOK(HANDLE);
