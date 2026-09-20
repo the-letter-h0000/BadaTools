@@ -1,24 +1,24 @@
-undefined4 ATCmd_GetDisplay(undefined4 param_1,undefined4 param_2,int param_3,undefined4 param_4,undefined4 param_5)
+undefined4 ATCmd_GetDisplay(undefined4 param_1,void *HANDLE,int commandMode,char *displayNum,char *chunkNum)
 {
-  undefined4 uVar1;
-  undefined1 uVar2;
-  undefined2 uVar3;
-  int iVar4;
-  
-  uVar1 = DAT_8192c334;
-  if ((((param_3 == 3) || (param_3 == 1)) || (param_3 == 2)) &&
-     ((iVar4 = strcmp(&DAT_8192c338,param_4), iVar4 == 0 ||
-      (iVar4 = strcmp(&DAT_8192c33c,param_4), iVar4 == 0))))
+  undefined1 iDisplayNum;
+  undefined2 iChunkNum;
+  int iVar1;
+  // Accepts display 1 (when other Wave devices have only a single display)
+  // leftover from SCH-W689 (Duos W689)
+  // results in a hard crash on other devices when calling LcdScreenBufferFree
+  if ((((commandMode == 3) || (commandMode == 1)) || (commandMode == 2)) &&
+     ((iVar1 = strcmp("0",displayNum), iVar1 == 0 || (iVar1 = strcmp("1",displayNum), iVar1 == 0))))
   {
-    uVar2 = strtol(param_4,0,10);
-    uVar3 = strtol(param_5,0,10);
-    iVar4 = __RbmCHSendLCDDisplayData(uVar2,uVar3);
-    if (iVar4 != 0)
+    iDisplayNum = strtol(displayNum,0,10);
+    iChunkNum = strtol(chunkNum,0,10);
+    iVar1 = __RbmCHSendLCDDisplayData_8191FCE4(iDisplayNum,iChunkNum);
+    if (iVar1 != 0)
     {
-      AT_CmdRspOK(param_2);
+      AT_CmdRspOK(HANDLE);
       return 1;
     }
   }
-  AT_CmdRspError(param_2,uVar1);
+  AT_CmdRspError(HANDLE,602); // return +CME ERROR: 602
   return 0xffffffff;
 }
+
