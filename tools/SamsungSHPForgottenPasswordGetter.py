@@ -104,7 +104,7 @@ def parseTkShell():
     if (st != 0x7f):
         print(f"invalid OemUsbWrite packet (invalid start byte) (got: 0x{st:02X}, expected 0x7F)")
         return None
-    comport.read(2), 'little' # ignore packet size
+    comport.read(2) # ignore packet size
     B_thing = int.from_bytes(comport.read(1))
     if (B_thing != 0x42):
         print(f"invalid OemUsbWrite packet (invalid byte) (got: 0x{B_thing:02X}, expected 0x42)")
