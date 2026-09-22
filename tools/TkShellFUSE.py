@@ -10,6 +10,7 @@ import re
 from fusepy import FUSE, FuseOSError, Operations
 
 # TkShellFUSE.py - FUSE driver for FM operations on Samsung SHP Phones, replacing TkFileExplorer on Windows.
+# currently read only
 
 if len(sys.argv) < 3:
     print("not enough args. Required: mountPath serialPort [-h - show hidden files / folders]")
@@ -59,6 +60,8 @@ RB_ID_ADM_ECHO = 0x01
 RB_MISC = 0x05
 RB_ID_MISC_DEFAULT = 0x00
 
+INVALID_HANDLE_VALUE = 0xFFFFFFFF
+
 def printW(text):
     print(f"\x1b[1;38;2;255;255;0m{text}\x1b[0m")
 
@@ -83,7 +86,6 @@ def buildcmd(data, command, subcommand):
     packet.extend(data)
     packet.extend(crc.to_bytes(2, 'big'))
     packet.append(0x7E)
-    #print(f"[buildcmd] sent: {packet.hex()}")
     return packet
 
 def parseTkShell():
@@ -102,7 +104,7 @@ def parseTkShell():
         if (st != 0x7f):
             printW(f"invalid OemUsbWrite packet (invalid start byte) (got: 0x{st:02X}, expected 0x7F)")
             return None
-        comport.read(2), 'little' # ignore packet size
+        comport.read(2) # ignore packet size
         B_thing = int.from_bytes(comport.read(1))
         if (B_thing != 0x42):
             printW(f"invalid OemUsbWrite packet (invalid byte) (got: 0x{B_thing:02X}, expected 0x42)")
@@ -120,7 +122,6 @@ def parseTkShell():
         if crc != crcCalc:
             printW(f"CRC mismatch!")
             return None
-        #print(f"returned data payload: {respData.hex()}")
         return respData
 
 def openDirectory(path:str):
@@ -129,10 +130,10 @@ def openDirectory(path:str):
         comport.write(buildcmd(path.encode() + "\0".encode(), RB_FM, RB_ID_FM_OPENDIR))
         result = parseTkShell()
         if result == None:
-            return 0xFFFFFFFF
+            return INVALID_HANDLE_VALUE
         else:
             hDir = int.from_bytes(result, 'little')
-            if hDir == 0xFFFFFFFF: # no free handles, or file / directory does not exist
+            if hDir == INVALID_HANDLE_VALUE: # no free handles, or file / directory does not exist
                 printW("no free hDir handles, or file / directory does not exist")
             return hDir
 
@@ -153,10 +154,10 @@ def openFile(path:str, mode:int):
         comport.write(bytes([0x00])) # nudge it to send the payload instead of not responding, don't know why S5230's do that, do not remove.
         result = parseTkShell()
         if result == None:
-            return 0xFFFFFFFF
+            return INVALID_HANDLE_VALUE
         else:
             hFile = int.from_bytes(result, "little")
-            if hFile == 0xFFFFFFFF:
+            if hFile == INVALID_HANDLE_VALUE:
                 printW("no free hFile handles, or file / directory does not exist")
             return hFile
 
@@ -181,7 +182,7 @@ def readFullFile(path):
     print(f"[readFullFile] {path}")
     with lock:
         handle = openFile(path, FM_READ)
-        if handle == 0xFFFFFFFF:
+        if handle == INVALID_HANDLE_VALUE:
             return None
         result = bytearray()
         while True:
@@ -248,7 +249,6 @@ def createFile(path:str, mode:int):
             return int.from_bytes(result, "little") # retuns an hFile to created file
 
 def writeFile(hFile:int, bufLen:int, buffer):
-    print(f"[writeFile] hFile: {hFile:08X} bufLen: {bufLen}")
     with lock:
         comport.write(buildcmd(hFile.to_bytes(4, "little") + bufLen.to_bytes(4, "little") + buffer, RB_FM, RB_ID_FM_WRITEFILE))
         result = parseTkShell()
@@ -305,7 +305,6 @@ def parseFmOpenEntry(entry:bytes):
         "minute": minute,
         "second": second,
     }
-    #print(f"[parseFmOpenEntry] {result}")
     return result
 
 def getDirectory(path):
@@ -313,7 +312,7 @@ def getDirectory(path):
     with lock:
         handle = openDirectory(path)
         result = []
-        if handle == 0xFFFFFFFF:
+        if handle == INVALID_HANDLE_VALUE:
             return None
         while True:
             meta = readDirEntry(handle)
@@ -392,13 +391,19 @@ def setFmSecureMode(mode):
         return True
 
 def writeFileChunked(hFile, buffer):
-    chunkSize = 1200
-    for i in range(0, len(buffer), chunkSize):
-        chunk = buffer[i:i + chunkSize]
-        result = writeFile(hFile, len(chunk), chunk)
-        if result == None:
-            return None
-    return result
+    with lock:
+        chunkSize = 1200
+        written = 0
+        for i in range(0, len(buffer), chunkSize):
+            end = min(i + chunkSize, len(buffer))
+            chunk = buffer[i:end]
+            result = writeFile(hFile, len(chunk), chunk)
+            if result == None:
+                return None
+            written = min(written + len(chunk), len(buffer))
+            if len(buffer) != 0:
+                print(f"[writeFileChunked] writing... {round((written / len(buffer)) * 100)}%")
+        return result
 
 def clearWriteCache():
     print(f"[clearwriteCache] clear write cache")
@@ -507,11 +512,8 @@ class TkShellFS(Operations):
     def rmdir(self, path):
         print(f"[FUSE] rmdir {path}")
         result = removeDirectory(path)
-        if result == None:
-            printW("[FUSE] raising errno.EIO! (error parsing)")
-            raise FuseOSError(errno.EIO)
-        if result != 1:
-            printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+        if result == None or result != 1:
+            printW(f"[FUSE] raising errno.EIO! (result: {result})")
             raise FuseOSError(errno.EIO)
         dirCache.clear()
         return 0
@@ -542,21 +544,12 @@ class TkShellFS(Operations):
         print(f"[FUSE] rename '{old}' -> '{new}'")
         if writeCache["path"] == old and len(writeCache["data"]) != 0:
             hFile = createFile(new, FM_ERASE_WRITE)
-            if hFile == None:
-                printW(f"[FUSE] raising errno.EIO! (create returned None)")
-                closeFile(hFile)
-                raise FuseOSError(errno.EIO)
-            if hFile == 0xFFFFFFFF:
-                printW(f"[FUSE] raising errno.EIO! (create: hFile is -1)")
-                closeFile(hFile)
+            if hFile == None or hFile == INVALID_HANDLE_VALUE:
+                printW(f"[FUSE] raising errno.EIO! (hFile: {hFile})")
                 raise FuseOSError(errno.EIO)
             result = writeFileChunked(hFile, writeCache["data"])
-            if result == None:
-                printW(f"[FUSE] raising errno.EIO! (write returned None)")
-                closeFile(hFile)
-                raise FuseOSError(errno.EIO)
-            if result != 1:
-                printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+            if result == None or result != 1:
+                printW(f"[FUSE] raising errno.EIO! (write returned {result})")
                 closeFile(hFile)
                 raise FuseOSError(errno.EIO)
             dirCache.clear()
@@ -568,6 +561,27 @@ class TkShellFS(Operations):
         if result == None:
             printW("[FUSE] raising errno.EIO!")
             raise FuseOSError(errno.EIO)
+        if result != 1: # destination exists, or old file doesn't exist
+            printW("[FUSE] replacing new file with old")
+            hNewFile = createFile(new, FM_ERASE_WRITE)
+            if hNewFile == INVALID_HANDLE_VALUE or hNewFile == None:
+                printW(f"[FUSE] raising errno.EIO! (hNewFile: {hNewFile})")
+                raise FuseOSError(errno.EIO)
+            oldFileData = readFullFile(old)
+            if oldFileData == None:
+                printW(f"[FUSE] raising errno.EIO! (oldFileData: INVALID_HANDLE_VALUE)")
+                closeFile(hNewFile)
+                raise FuseOSError(errno.EIO)
+            writeResult = writeFileChunked(hNewFile, oldFileData)
+            if writeResult == None:
+                printW(f"[FUSE] raising errno.EIO! (writeResult: {writeResult})")
+                closeFile(hNewFile)
+                raise FuseOSError(errno.EIO)
+            closeFile(hNewFile)
+            removeResult = removeFile(old)
+            if removeResult == None:
+                printW(f"[FUSE] raising errno.EIO! (removeResult: {removeResult})")
+                raise FuseOSError(errno.EIO)
         clearFileCache()
         dirCache.clear()
         return 0
@@ -575,7 +589,7 @@ class TkShellFS(Operations):
     def create(self, path, mode, fi=None):
         print(f"[FUSE] create {path}")
         hFile = createFile(path, FM_ERASE_WRITE)
-        if hFile == 0xFFFFFFFF:
+        if hFile == INVALID_HANDLE_VALUE:
             printW(f"[FUSE] raising errno.EIO! (hFile is -1)")
             raise FuseOSError(errno.EIO)
         closeFile(hFile)
@@ -588,27 +602,18 @@ class TkShellFS(Operations):
         print(f"[FUSE] release {path}")
         if writeCache["path"] == path and len(writeCache["data"]) != 0:
             hFile = createFile(path, FM_ERASE_WRITE)
-            if hFile == None:
-                printW(f"[FUSE] raising errno.EIO! (create returned None)")
-                closeFile(hFile)
-                raise FuseOSError(errno.EIO)
-            if hFile == 0xFFFFFFFF:
-                printW(f"[FUSE] raising errno.EIO! (create: hFile is -1)")
-                closeFile(hFile)
+            if hFile == None or hFile == INVALID_HANDLE_VALUE:
+                printW(f"[FUSE] raising errno.EIO! (hFile: {hFile})")
                 raise FuseOSError(errno.EIO)
             result = writeFileChunked(hFile, writeCache["data"])
-            if result == None:
-                printW(f"[FUSE] raising errno.EIO! (write returned None)")
-                closeFile(hFile)
-                raise FuseOSError(errno.EIO)
-            if result != 1:
-                printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+            if result == None or result != 1:
+                printW(f"[FUSE] raising errno.EIO! (write returned {result})")
                 closeFile(hFile)
                 raise FuseOSError(errno.EIO)
             dirCache.clear()
             clearFileCache()
             clearWriteCache()
             closeFile(hFile)
-        return 0
+            return 0
 
 FUSE(TkShellFS(), sys.argv[1], foreground=True, ro=False)
