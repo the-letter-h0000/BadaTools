@@ -542,6 +542,7 @@ class TkShellFS(Operations):
     def rename(self, old, new):
         print(f"[FUSE] rename '{old}' -> '{new}'")
         if writeCache["path"] == old and len(writeCache["data"]) != 0:
+            print("[FUSE] cached rename")
             hFile = createFile(new, FM_ERASE_WRITE)
             if hFile == None or hFile == INVALID_HANDLE_VALUE:
                 printW(f"[FUSE] raising errno.EIO! (hFile: {hFile})")
@@ -555,6 +556,10 @@ class TkShellFS(Operations):
             clearFileCache()
             clearWriteCache()
             closeFile(hFile)
+            rmOld = removeFile(old)
+            if rmOld == None:
+                printW(f"[FUSE] raising errno.EIO! (rmOld: {rmOld})")
+                raise FuseOSError(errno.EIO)
             return 0
         result = moveFile(old, new)
         if result == None:
