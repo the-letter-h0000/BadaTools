@@ -10,7 +10,6 @@ import re
 from fusepy import FUSE, FuseOSError, Operations
 
 # TkShellFUSE.py - FUSE driver for FM operations on Samsung SHP Phones, replacing TkFileExplorer on Windows.
-# currently read only
 
 if len(sys.argv) < 3:
     print("not enough args. Required: mountPath serialPort [-h - show hidden files / folders]")
@@ -26,27 +25,27 @@ comport = serial.Serial(sys.argv[2], 921600)
 comport.timeout = 15
 
 dirCache = {}
+writeCache = {"path": "", "data": None}
 fileCache = {"path": "", "data": None}
-handles = {}
 
 lock = threading.RLock()
 
 moveFilePadding = 0x304
 
 RB_FM = 0x00
-RB_ID_FM_OPENFILE = 0x00 #
-RB_ID_FM_CLOSEFILE = 0x01 #
-RB_ID_FM_READFILE = 0x02 #
-RB_ID_FM_WRITEFILE = 0x03 #
-RB_ID_FM_CREATEFILE = 0x04 #
-RB_ID_FM_REMOVEFILE = 0x05 #
-RB_ID_FM_MOVEFILE = 0x06 #
+RB_ID_FM_OPENFILE = 0x00
+RB_ID_FM_CLOSEFILE = 0x01
+RB_ID_FM_READFILE = 0x02
+RB_ID_FM_WRITEFILE = 0x03
+RB_ID_FM_CREATEFILE = 0x04
+RB_ID_FM_REMOVEFILE = 0x05
+RB_ID_FM_MOVEFILE = 0x06
 RB_ID_FM_GETFILEATTRIBUTES = 0x07
-RB_ID_FM_OPENDIR = 0x08 #
-RB_ID_FM_CLOSEDIR = 0x09 #
-RB_ID_FM_READDIR = 0x0A #
-RB_ID_FM_CREATEDIR = 0x0B #
-RB_ID_FM_REMOVEDIR = 0x0C #
+RB_ID_FM_OPENDIR = 0x08
+RB_ID_FM_CLOSEDIR = 0x09
+RB_ID_FM_READDIR = 0x0A
+RB_ID_FM_CREATEDIR = 0x0B
+RB_ID_FM_REMOVEDIR = 0x0C
 
 FM_READ =  0x00
 FM_WRITE = 0x01 # overwrite bytes starting from offset 0 without clearing the file
@@ -388,9 +387,23 @@ def setFmSecureMode(mode):
         result = parseTkShell()
         if result == None:
             return False
-        if len(result) < 4 or int.from_bytes(result[:4], "little") != 8:
+        if len(result) < 4:
             return False
         return True
+
+def writeFileChunked(hFile, buffer):
+    chunkSize = 1200
+    for i in range(0, len(buffer), chunkSize):
+        chunk = buffer[i:i + chunkSize]
+        result = writeFile(hFile, len(chunk), chunk)
+        if result == None:
+            return None
+    return result
+
+def clearWriteCache():
+    print(f"[clearwriteCache] clear write cache")
+    writeCache["data"] = None
+    writeCache["path"] = ""
 
 # ===================================
 # MAIN PROGRAM STARTS HERE
@@ -505,59 +518,58 @@ class TkShellFS(Operations):
 
     def write(self, path, data, offset, fh):
         print(f"[FUSE] write '{path}' {offset}")
-        clearFileCache()
-        readResult = readFullFile(path)
-        if readResult == None:
-            printW("[FUSE] raising errno.EIO! (readFullFile returned None)")
-            raise FuseOSError(errno.EIO)
-
-        readResult = bytearray(readResult)
-
-        if offset > len(readResult):
-            readResult.extend(("\0".encode()) * (offset - len(readResult)))
-
-        readResult[offset:offset + len(data)] = data
-        hFile = createFile(path, FM_ERASE_WRITE)
-        if hFile == 0xFFFFFFFF:
-            printW(f"[FUSE] raising errno.EIO! (hFile is -1)")
-            raise FuseOSError(errno.EIO)
-        
-        result = writeFile(hFile, len(readResult), readResult)
-        closeFile(hFile)
-        if result == None:
-            printW("[FUSE] raising errno.EIO! (error writing)")
-            raise FuseOSError(errno.EIO)
-        if result != 1:
-            printW(f"[FUSE] raising errno.EIO! (write) (device returned {result})")
-            raise FuseOSError(errno.EIO)
+        if writeCache["path"] != path:
+            writeCache["path"] = path
+            writeCache["data"] = bytearray()
+        buffer = writeCache["data"]
+        bufEnd = offset + len(data)
+        if bufEnd > len(buffer):
+            buffer.extend(("\0".encode()) * (bufEnd - len(buffer)))
+        buffer[offset:bufEnd] = data
         return len(data)
 
     def unlink(self, path):
         print(f"[FUSE] unlink {path}")
-        clearFileCache()
-        dirCache.clear()
-
         result = removeFile(path)
         if result == None:
             printW("[FUSE] raising errno.EIO!")
             raise FuseOSError(errno.EIO)
-        if result != 1:
-            printW(f"[FUSE] raising errno.EIO! (device returned {result})")
-            raise FuseOSError(errno.EIO)
+        clearFileCache()
+        dirCache.clear()
         return 0
 
     def rename(self, old, new):
         print(f"[FUSE] rename '{old}' -> '{new}'")
-        clearFileCache()
-        dirCache.clear()
-
+        if writeCache["path"] == old and len(writeCache["data"]) != 0:
+            hFile = createFile(new, FM_ERASE_WRITE)
+            if hFile == None:
+                printW(f"[FUSE] raising errno.EIO! (create returned None)")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            if hFile == 0xFFFFFFFF:
+                printW(f"[FUSE] raising errno.EIO! (create: hFile is -1)")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            result = writeFileChunked(hFile, writeCache["data"])
+            if result == None:
+                printW(f"[FUSE] raising errno.EIO! (write returned None)")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            if result != 1:
+                printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            dirCache.clear()
+            clearFileCache()
+            clearWriteCache()
+            closeFile(hFile)
+            return 0
         result = moveFile(old, new)
         if result == None:
             printW("[FUSE] raising errno.EIO!")
             raise FuseOSError(errno.EIO)
-        if result != 1:
-            printW(f"[FUSE] raising errno.EIO! (device returned {result})")
-            raise FuseOSError(errno.EIO)
+        clearFileCache()
+        dirCache.clear()
         return 0
 
     def create(self, path, mode, fi=None):
@@ -570,6 +582,33 @@ class TkShellFS(Operations):
 
         clearFileCache()
         dirCache.clear()
+        return 0
+
+    def release(self, path, fh):
+        print(f"[FUSE] release {path}")
+        if writeCache["path"] == path and len(writeCache["data"]) != 0:
+            hFile = createFile(path, FM_ERASE_WRITE)
+            if hFile == None:
+                printW(f"[FUSE] raising errno.EIO! (create returned None)")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            if hFile == 0xFFFFFFFF:
+                printW(f"[FUSE] raising errno.EIO! (create: hFile is -1)")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            result = writeFileChunked(hFile, writeCache["data"])
+            if result == None:
+                printW(f"[FUSE] raising errno.EIO! (write returned None)")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            if result != 1:
+                printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+                closeFile(hFile)
+                raise FuseOSError(errno.EIO)
+            dirCache.clear()
+            clearFileCache()
+            clearWriteCache()
+            closeFile(hFile)
         return 0
 
 FUSE(TkShellFS(), sys.argv[1], foreground=True, ro=False)
