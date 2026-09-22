@@ -5,6 +5,7 @@ import io
 import datetime
 import sys
 import threading
+import re
 
 from fusepy import FUSE, FuseOSError, Operations
 
@@ -12,36 +13,52 @@ from fusepy import FUSE, FuseOSError, Operations
 # currently read only
 
 if len(sys.argv) < 3:
-    print("not enough args. Required: mountPath serialPort")
+    print("not enough args. Required: mountPath serialPort [-h - show hidden files / folders]")
+    print("examples:")
+    print(f"python3 {sys.argv[0]} /mnt/wave /dev/ttyACM0 -h")
+    print(f"python3 {sys.argv[0]} /mnt/wave /dev/ttyACM0")
     exit()
 
 ack = bytes([0x7F, 0x01, 0x00, 0x42, 0x01, 0x7E])
 
 comport = serial.Serial(sys.argv[2], 921600)
 
+comport.timeout = 15
+
 dirCache = {}
 fileCache = {"path": "", "data": None}
+handles = {}
 
 lock = threading.RLock()
 
+moveFilePadding = 0x304
+
 RB_FM = 0x00
-RB_ID_FM_OPENFILE = 0x00
-RB_ID_FM_CLOSEFILE = 0x01
-RB_ID_FM_READFILE = 0x02
-RB_ID_FM_WRITEFILE = 0x03
-RB_ID_FM_CREATEFILE = 0x04
-RB_ID_FM_REMOVEFILE = 0x05
-RB_ID_FM_MOVEFILE = 0x06
+RB_ID_FM_OPENFILE = 0x00 #
+RB_ID_FM_CLOSEFILE = 0x01 #
+RB_ID_FM_READFILE = 0x02 #
+RB_ID_FM_WRITEFILE = 0x03 #
+RB_ID_FM_CREATEFILE = 0x04 #
+RB_ID_FM_REMOVEFILE = 0x05 #
+RB_ID_FM_MOVEFILE = 0x06 #
 RB_ID_FM_GETFILEATTRIBUTES = 0x07
-RB_ID_FM_OPENDIR = 0x08
-RB_ID_FM_CLOSEDIR = 0x09
-RB_ID_FM_READDIR = 0x0A
-RB_ID_FM_CREATEDIR = 0x0B
-RB_ID_FM_REMOVEDIR = 0x0C
+RB_ID_FM_OPENDIR = 0x08 #
+RB_ID_FM_CLOSEDIR = 0x09 #
+RB_ID_FM_READDIR = 0x0A #
+RB_ID_FM_CREATEDIR = 0x0B #
+RB_ID_FM_REMOVEDIR = 0x0C #
+
+FM_READ =  0x00
+FM_WRITE = 0x01 # overwrite bytes starting from offset 0 without clearing the file
+FM_ERASE_WRITE = 0x09
+FM_APPEND = 0x10
 
 RB_ADM = 0x04
 RB_ID_ADM_HELLO = 0x00
 RB_ID_ADM_ECHO = 0x01
+
+RB_MISC = 0x05
+RB_ID_MISC_DEFAULT = 0x00
 
 def printW(text):
     print(f"\x1b[1;38;2;255;255;0m{text}\x1b[0m")
@@ -82,7 +99,6 @@ def parseTkShell():
                     i = 1
                 else:
                     i = 0
-
         st = int.from_bytes(comport.read(1))
         if (st != 0x7f):
             printW(f"invalid OemUsbWrite packet (invalid start byte) (got: 0x{st:02X}, expected 0x7F)")
@@ -135,6 +151,7 @@ def openFile(path:str, mode:int):
     print(f"[openFile] '{path}' mode: {mode}")
     with lock:
         comport.write(buildcmd(mode.to_bytes(4, "little") + path.encode() + "\0".encode(), RB_FM, RB_ID_FM_OPENFILE))
+        comport.write(bytes([0x00])) # nudge it to send the payload instead of not responding, don't know why S5230's do that, do not remove.
         result = parseTkShell()
         if result == None:
             return 0xFFFFFFFF
@@ -150,7 +167,7 @@ def closeFile(hFile:int):
         comport.write(buildcmd(hFile.to_bytes(4, "little"), RB_FM, RB_ID_FM_CLOSEFILE))
         result = parseTkShell()
         if result == None:
-            return -1
+            return None
         else:
             return int.from_bytes(result, "little")
 
@@ -164,7 +181,7 @@ def readFile(hFile:int, length:int):
 def readFullFile(path):
     print(f"[readFullFile] {path}")
     with lock:
-        handle = openFile(path, 2)
+        handle = openFile(path, FM_READ)
         if handle == 0xFFFFFFFF:
             return None
         result = bytearray()
@@ -180,6 +197,66 @@ def readFullFile(path):
                 return bytes(result)
             else:
                 result.extend(pack.read(size))
+
+def createDirectory(path):
+    print(f"[createDirectory] {path}")
+    with lock:
+        comport.write(buildcmd(path.encode() + "\0".encode(), RB_FM, RB_ID_FM_CREATEDIR))
+        result = parseTkShell()
+        if result == None:
+            return None
+        else:
+            return int.from_bytes(result, "little") # 1 - success, 0 - the directory already exists
+
+def removeDirectory(path):
+    print(f"[removeDirectory] {path}")
+    with lock:
+        comport.write(buildcmd(path.encode() + "\0".encode(), RB_FM, RB_ID_FM_REMOVEDIR))
+        result = parseTkShell()
+        if result == None:
+            return None
+        else:
+            return int.from_bytes(result, "little") # 1 - error, 0 - success
+
+def removeFile(path):
+    print(f"[removeFile] {path}")
+    with lock:
+        comport.write(buildcmd(path.encode() + "\0".encode(), RB_FM, RB_ID_FM_REMOVEFILE))
+        result = parseTkShell()
+        if result == None:
+            return None
+        else:
+            return int.from_bytes(result, "little") # 1 - error, 0 - success
+
+def moveFile(path, newPath):
+    print(f"[moveFile] '{path}' -> '{newPath}'")
+    with lock:
+        comport.write(buildcmd(path.encode() + ("\0"*(moveFilePadding - len(path))).encode() + newPath.encode() + "\0".encode(), RB_FM, RB_ID_FM_MOVEFILE))
+        result = parseTkShell()
+        if result == None:
+            return None
+        else:
+            return int.from_bytes(result, "little") # 1 - success
+
+def createFile(path:str, mode:int):
+    print(f"[createFile] '{path}' mode: {mode}")
+    with lock:
+        comport.write(buildcmd(mode.to_bytes(4, "little") + path.encode() + "\0".encode(), RB_FM, RB_ID_FM_CREATEFILE))
+        result = parseTkShell()
+        if result == None:
+            return None
+        else:
+            return int.from_bytes(result, "little") # retuns an hFile to created file
+
+def writeFile(hFile:int, bufLen:int, buffer):
+    print(f"[writeFile] hFile: {hFile:08X} bufLen: {bufLen}")
+    with lock:
+        comport.write(buildcmd(hFile.to_bytes(4, "little") + bufLen.to_bytes(4, "little") + buffer, RB_FM, RB_ID_FM_WRITEFILE))
+        result = parseTkShell()
+        if result == None:
+            return None
+        else:
+            return int.from_bytes(result, "little") # 1 - success
 
 def readDirEntry(hDir:int):
     print(f"[readDirEntry] hDir: {hDir:08X}")
@@ -199,7 +276,7 @@ def parseFmOpenEntry(entry:bytes):
         "year": 0,
         "name": "",
         "filesize": 0,
-        "unk2": 0,
+        "attrib": 0,
         "month": 0,
         "day": 0,
         "hour": 0,
@@ -208,7 +285,7 @@ def parseFmOpenEntry(entry:bytes):
     }
     entryType = int.from_bytes(f.read(4), "little")
     filesize = int.from_bytes(f.read(4), "little")
-    unk2 = int.from_bytes(f.read(4), "little")
+    attrib = int.from_bytes(f.read(4), "little")
     year = int.from_bytes(f.read(4), "little")
     month = int.from_bytes(f.read(4), "little")
     day = int.from_bytes(f.read(4), "little")
@@ -222,7 +299,7 @@ def parseFmOpenEntry(entry:bytes):
         "year": year,
         "name": name,
         "filesize": filesize,
-        "unk2": unk2,
+        "attrib": attrib,
         "month": month, # date modified
         "day": day,
         "hour": hour,
@@ -274,7 +351,44 @@ def ifAlive():
         result = parseTkShell()
         if result == None:
             return False
+        if len(result) < 4 or int.from_bytes(result[:4], "little") != 1:
+            return {}
         if result[4:].split("\0".encode(), 1)[0].decode(errors='ignore') != "Hello, TkShell~":
+            return False
+        return True
+
+def clearFileCache():
+    print(f"[clearFileCache] clear file cache")
+    fileCache["data"] = None
+    fileCache["path"] = ""
+
+def getDevConInfo():
+    with lock:
+        comport.write(buildcmd("DevConInfo\0".encode(), RB_MISC, RB_ID_MISC_DEFAULT))
+        result = parseTkShell()
+        parsed = {}
+        if result == None:
+            return parsed
+        if len(result) < 4 or int.from_bytes(result[:4], "little") != 1:
+            return parsed
+        data = result[4:].decode(errors="ignore")
+        items = data.split(';')
+        for item in items:
+            match = re.search(r"(.*)\((.*)\)", item)
+            if match != None:
+                parsed[match.group(1)] = match.group(2)
+        return parsed
+
+def setFmSecureMode(mode):
+    with lock:
+        if mode == True:
+            comport.write(buildcmd("FmSecureMode on\0".encode(), RB_MISC, RB_ID_MISC_DEFAULT))
+        else:
+            comport.write(buildcmd("FmSecureMode off\0".encode(), RB_MISC, RB_ID_MISC_DEFAULT))
+        result = parseTkShell()
+        if result == None:
+            return False
+        if len(result) < 4 or int.from_bytes(result[:4], "little") != 8:
             return False
         return True
 
@@ -288,13 +402,30 @@ if not ifAlive():
 else:
     print(f"success getting hello command, connected to {comport.name} @ {comport.baudrate} baud")
 
-class MyFS(Operations):
+device = getDevConInfo()
+if device == {} or device["MN"].startswith("GT-S5230"):
+    print("S5230 detected.")
+    moveFilePadding = 0x12C
+
+if device != {}:
+    print("Device info:")
+    for prop, val in device.items():
+        print(f"{prop}: {val}")
+
+if len(sys.argv) > 3 and sys.argv[3] == "-h":
+    if not setFmSecureMode(False):
+        printW("failed to set FmSecureMode")
+else:
+    if not setFmSecureMode(True):
+        printW("failed to set FmSecureMode")
+
+class TkShellFS(Operations):
     def getattr(self, path:str, fh=None):
         print(f"[FUSE] getattr path:{path}")
         if path == "/":
             return {
-                "st_mode": stat.S_IFDIR | 0o755,
-                "st_nlink": 2,
+                "st_mode": stat.S_IFDIR | 0o777,
+                "st_nlink": 2
             }
         parentDir = path.rsplit("/", 1)
         name = parentDir[1]
@@ -309,7 +440,7 @@ class MyFS(Operations):
                 dt = datetime.datetime(entry["year"], entry["month"], entry["day"], entry["hour"], entry["minute"], entry["second"]).timestamp()
                 if entry["entryType"] == 2:
                     return {
-                        "st_mode": stat.S_IFDIR | 0o755,
+                        "st_mode": stat.S_IFDIR | 0o777,
                         "st_nlink": 2,
                         "st_mtime": dt,
                         "st_atime": dt,
@@ -317,7 +448,7 @@ class MyFS(Operations):
                     }
                 else:
                     return {
-                        "st_mode": stat.S_IFREG | 0o444,
+                        "st_mode": stat.S_IFREG | 0o777,
                         "st_nlink": 1,
                         "st_size": entry["filesize"],
                         "st_mtime": dt,
@@ -331,6 +462,9 @@ class MyFS(Operations):
         entries = getCachedDirectory(path)
         result = []
         for entry in entries:
+            if entry["name"] == None:
+                printW("[FUSE] raising errno.EIO!")
+                raise FuseOSError(errno.EIO)
             result.append(entry["name"])
         return result
 
@@ -345,5 +479,97 @@ class MyFS(Operations):
             raise FuseOSError(errno.EIO)
         return data[offset:offset + size]
 
+    def mkdir(self, path, mode):
+        print(f"[FUSE] mkdir {path}")
+        result = createDirectory(path)
+        if result == None:
+            printW("[FUSE] raising errno.EIO!")
+            raise FuseOSError(errno.EIO)
+        if result == 0:
+            printW("[FUSE] raising errno.EEXIST!")
+            raise FuseOSError(errno.EEXIST)
+        dirCache.clear()
+        return 0
+    
+    def rmdir(self, path):
+        print(f"[FUSE] rmdir {path}")
+        result = removeDirectory(path)
+        if result == None:
+            printW("[FUSE] raising errno.EIO! (error parsing)")
+            raise FuseOSError(errno.EIO)
+        if result != 1:
+            printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+            raise FuseOSError(errno.EIO)
+        dirCache.clear()
+        return 0
 
-FUSE(MyFS(), sys.argv[1], foreground=True, ro=True)
+    def write(self, path, data, offset, fh):
+        print(f"[FUSE] write '{path}' {offset}")
+        clearFileCache()
+        readResult = readFullFile(path)
+        if readResult == None:
+            printW("[FUSE] raising errno.EIO! (readFullFile returned None)")
+            raise FuseOSError(errno.EIO)
+
+        readResult = bytearray(readResult)
+
+        if offset > len(readResult):
+            readResult.extend(("\0".encode()) * (offset - len(readResult)))
+
+        readResult[offset:offset + len(data)] = data
+        hFile = createFile(path, FM_ERASE_WRITE)
+        if hFile == 0xFFFFFFFF:
+            printW(f"[FUSE] raising errno.EIO! (hFile is -1)")
+            raise FuseOSError(errno.EIO)
+        
+        result = writeFile(hFile, len(readResult), readResult)
+        closeFile(hFile)
+        if result == None:
+            printW("[FUSE] raising errno.EIO! (error writing)")
+            raise FuseOSError(errno.EIO)
+        if result != 1:
+            printW(f"[FUSE] raising errno.EIO! (write) (device returned {result})")
+            raise FuseOSError(errno.EIO)
+        return len(data)
+
+    def unlink(self, path):
+        print(f"[FUSE] unlink {path}")
+        clearFileCache()
+        dirCache.clear()
+
+        result = removeFile(path)
+        if result == None:
+            printW("[FUSE] raising errno.EIO!")
+            raise FuseOSError(errno.EIO)
+        if result != 1:
+            printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+            raise FuseOSError(errno.EIO)
+        return 0
+
+    def rename(self, old, new):
+        print(f"[FUSE] rename '{old}' -> '{new}'")
+        clearFileCache()
+        dirCache.clear()
+
+        result = moveFile(old, new)
+        if result == None:
+            printW("[FUSE] raising errno.EIO!")
+            raise FuseOSError(errno.EIO)
+        if result != 1:
+            printW(f"[FUSE] raising errno.EIO! (device returned {result})")
+            raise FuseOSError(errno.EIO)
+        return 0
+
+    def create(self, path, mode, fi=None):
+        print(f"[FUSE] create {path}")
+        hFile = createFile(path, FM_ERASE_WRITE)
+        if hFile == 0xFFFFFFFF:
+            printW(f"[FUSE] raising errno.EIO! (hFile is -1)")
+            raise FuseOSError(errno.EIO)
+        closeFile(hFile)
+
+        clearFileCache()
+        dirCache.clear()
+        return 0
+
+FUSE(TkShellFS(), sys.argv[1], foreground=True, ro=False)
