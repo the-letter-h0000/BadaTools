@@ -10,7 +10,6 @@ import re
 from fusepy import FUSE, FuseOSError, Operations
 
 # TkShellFUSE.py - FUSE driver for FM operations on Samsung SHP Phones, replacing TkFileExplorer on Windows.
-# currently read only
 
 if len(sys.argv) < 3:
     print("not enough args. Required: mountPath serialPort [-h - show hidden files / folders]")
