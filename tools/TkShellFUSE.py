@@ -129,11 +129,12 @@ def openDirectory(path:str):
         comport.write(buildcmd(path.encode() + "\0".encode(), RB_FM, RB_ID_FM_OPENDIR))
         result = parseTkShell()
         if result == None:
-            return INVALID_HANDLE_VALUE
+            return None
         else:
             hDir = int.from_bytes(result, 'little')
             if hDir == INVALID_HANDLE_VALUE: # no free handles, or file / directory does not exist
                 printW("no free hDir handles, or file / directory does not exist")
+                return None
             return hDir
 
 def closeDirectory(hDir:int):
@@ -142,7 +143,7 @@ def closeDirectory(hDir:int):
         comport.write(buildcmd(hDir.to_bytes(4, "little"), RB_FM, RB_ID_FM_CLOSEDIR))
         result = parseTkShell()
         if result == None:
-            return -1
+            return None
         else:
             return int.from_bytes(result, "little")
 
@@ -153,11 +154,12 @@ def openFile(path:str, mode:int):
         comport.write(bytes([0x00])) # nudge it to send the payload instead of not responding, don't know why S5230's do that, do not remove.
         result = parseTkShell()
         if result == None:
-            return INVALID_HANDLE_VALUE
+            return None
         else:
             hFile = int.from_bytes(result, "little")
             if hFile == INVALID_HANDLE_VALUE:
                 printW("no free hFile handles, or file / directory does not exist")
+                return None
             return hFile
 
 def closeFile(hFile:int):
@@ -181,7 +183,7 @@ def readFullFile(path):
     print(f"[readFullFile] {path}")
     with lock:
         handle = openFile(path, FM_READ)
-        if handle == INVALID_HANDLE_VALUE:
+        if handle == None:
             return None
         result = bytearray()
         while True:
@@ -215,7 +217,7 @@ def removeDirectory(path):
         if result == None:
             return None
         else:
-            return int.from_bytes(result, "little") # 1 - error, 0 - success
+            return int.from_bytes(result, "little")
 
 def removeFile(path):
     print(f"[removeFile] {path}")
@@ -225,7 +227,7 @@ def removeFile(path):
         if result == None:
             return None
         else:
-            return int.from_bytes(result, "little") # 1 - error, 0 - success
+            return int.from_bytes(result, "little")
 
 def moveFile(path, newPath):
     print(f"[moveFile] '{path}' -> '{newPath}'")
@@ -235,7 +237,7 @@ def moveFile(path, newPath):
         if result == None:
             return None
         else:
-            return int.from_bytes(result, "little") # 1 - success
+            return int.from_bytes(result, "little")
 
 def createFile(path:str, mode:int):
     print(f"[createFile] '{path}' mode: {mode}")
@@ -245,6 +247,8 @@ def createFile(path:str, mode:int):
         if result == None:
             return None
         else:
+            if int.from_bytes(result, "little") == INVALID_HANDLE_VALUE:
+                return None
             return int.from_bytes(result, "little") # retuns an hFile to created file
 
 def writeFile(hFile:int, bufLen:int, buffer):
@@ -254,7 +258,7 @@ def writeFile(hFile:int, bufLen:int, buffer):
         if result == None:
             return None
         else:
-            return int.from_bytes(result, "little") # 1 - success
+            return int.from_bytes(result, "little")
 
 def readDirEntry(hDir:int):
     print(f"[readDirEntry] hDir: {hDir:08X}")
@@ -268,19 +272,7 @@ def parseFmOpenEntry(entry:bytes):
     isvalid = int.from_bytes(f.read(4), "little") # should be always 1, except when the end of the directory has been reached
     if isvalid != 1:
         print(f"[parseFmOpenEntry] (isvalid != 1) {isvalid}")
-        return {
-        "isValid": isvalid,
-        "entryType": 0,
-        "year": 0,
-        "name": "",
-        "filesize": 0,
-        "attrib": 0,
-        "month": 0,
-        "day": 0,
-        "hour": 0,
-        "minute": 0,
-        "second": 0,
-    }
+        return None
     entryType = int.from_bytes(f.read(4), "little")
     filesize = int.from_bytes(f.read(4), "little")
     attrib = int.from_bytes(f.read(4), "little")
@@ -291,8 +283,11 @@ def parseFmOpenEntry(entry:bytes):
     minute = int.from_bytes(f.read(4), "little")
     second = int.from_bytes(f.read(4), "little")
     name = f.read(0x100).split("\0".encode(), 1)[0].decode(errors='ignore')
+    if month < 1:
+        month = 1
+    elif month > 12:
+        month = 12
     result = {
-        "isValid": isvalid,
         "entryType": entryType,
         "year": year,
         "name": name,
@@ -311,7 +306,7 @@ def getDirectory(path):
     with lock:
         handle = openDirectory(path)
         result = []
-        if handle == INVALID_HANDLE_VALUE:
+        if handle == None:
             return None
         while True:
             meta = readDirEntry(handle)
@@ -319,7 +314,7 @@ def getDirectory(path):
                 closeDirectory(handle)
                 return None
             parsed = parseFmOpenEntry(meta)
-            if parsed["isValid"] != 1:
+            if parsed == None:
                 break
             result.append(parsed)
         closeDirectory(handle)
@@ -349,7 +344,7 @@ def ifAlive():
         if result == None:
             return False
         if len(result) < 4 or int.from_bytes(result[:4], "little") != 1:
-            return {}
+            return False
         if result[4:].split("\0".encode(), 1)[0].decode(errors='ignore') != "Hello, TkShell~":
             return False
         return True
@@ -477,11 +472,11 @@ class TkShellFS(Operations):
     def readdir(self, path, fh):
         print(f"[FUSE] readdir path:{path}")
         entries = getCachedDirectory(path)
+        if entries == None:
+            printW("[FUSE] raising errno.EIO!")
+            raise FuseOSError(errno.EIO)
         result = []
         for entry in entries:
-            if entry["name"] == None:
-                printW("[FUSE] raising errno.EIO!")
-                raise FuseOSError(errno.EIO)
             result.append(entry["name"])
         return result
 
@@ -521,7 +516,11 @@ class TkShellFS(Operations):
         print(f"[FUSE] write '{path}' {offset}")
         if writeCache["path"] != path:
             writeCache["path"] = path
-            writeCache["data"] = bytearray()
+            readResult = readFullFile(path)
+            if readResult == None:
+                writeCache["data"] = bytearray()
+            else:
+                writeCache["data"] = bytearray(readResult)
         buffer = writeCache["data"]
         bufEnd = offset + len(data)
         if bufEnd > len(buffer):
@@ -544,7 +543,7 @@ class TkShellFS(Operations):
         if writeCache["path"] == old and len(writeCache["data"]) != 0:
             print("[FUSE] cached rename")
             hFile = createFile(new, FM_ERASE_WRITE)
-            if hFile == None or hFile == INVALID_HANDLE_VALUE:
+            if hFile == None:
                 printW(f"[FUSE] raising errno.EIO! (hFile: {hFile})")
                 raise FuseOSError(errno.EIO)
             result = writeFileChunked(hFile, writeCache["data"])
@@ -568,7 +567,7 @@ class TkShellFS(Operations):
         if result != 1: # destination exists, or old file doesn't exist
             printW("[FUSE] replacing new file with old")
             hNewFile = createFile(new, FM_ERASE_WRITE)
-            if hNewFile == INVALID_HANDLE_VALUE or hNewFile == None:
+            if hNewFile == None:
                 printW(f"[FUSE] raising errno.EIO! (hNewFile: {hNewFile})")
                 raise FuseOSError(errno.EIO)
             oldFileData = readFullFile(old)
@@ -593,7 +592,7 @@ class TkShellFS(Operations):
     def create(self, path, mode, fi=None):
         print(f"[FUSE] create {path}")
         hFile = createFile(path, FM_ERASE_WRITE)
-        if hFile == INVALID_HANDLE_VALUE:
+        if hFile == None:
             printW(f"[FUSE] raising errno.EIO! (hFile is -1)")
             raise FuseOSError(errno.EIO)
         closeFile(hFile)
@@ -604,9 +603,9 @@ class TkShellFS(Operations):
 
     def release(self, path, fh):
         print(f"[FUSE] release {path}")
-        if writeCache["path"] == path and len(writeCache["data"]) != 0:
+        if writeCache["path"] == path and writeCache["data"] != None:
             hFile = createFile(path, FM_ERASE_WRITE)
-            if hFile == None or hFile == INVALID_HANDLE_VALUE:
+            if hFile == None:
                 printW(f"[FUSE] raising errno.EIO! (hFile: {hFile})")
                 raise FuseOSError(errno.EIO)
             result = writeFileChunked(hFile, writeCache["data"])
