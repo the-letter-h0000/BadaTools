@@ -45,6 +45,13 @@ Requirements:
 - Python 3
 - pyserial
 
+### SamsungRC2imageExtractor.py
+Extracts Debug Level info, boot splash screen, charging splash screen, and misc files from rc2 resources from Samsung firmware files
+
+Requirements:
+- Python 3
+- Pillow
+
 ## Decompilation tools
 ### readFunclist.py
 Dumps the function list in uncompressed_apps.bin (0x04340000) to a readable format, also converts addresses lower than 0x81000000 to image base offsets for use in Ghidra
